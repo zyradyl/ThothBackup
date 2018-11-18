@@ -6,6 +6,9 @@ client/macos/Thoth-Backup.app/Contents/Resources/key/*
 client/macos/Thoth-Backup.app/Contents/Resources/exclusions/*
 client/macos/Thoth-Backup.app/Contents/Resources/logs/*
 
+# Ignore mac files
+.DS_Store
+
 # Except for the readmes.
 !client/macos/key/README
 
