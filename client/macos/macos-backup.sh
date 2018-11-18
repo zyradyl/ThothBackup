@@ -15,15 +15,31 @@
 #
 # Locate needed commands
 #
+CHMOD="$(which chmod)"
+DATE="$(which date)"
 HOSTNAME="$(which hostname)"
 RSYNC="$(which rsync)"
+SSH="$(which ssh)"
 WHOAMI="$(which whoami)"
 
 #
-# Stage 1 - Who is doing the backup? Where are we?
+# Global Variables
+#
+BACKUP_SERVER="192.168.1.100"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
+#
+# Compound Variables
+#
+timestamp=$($DATE +%Y%m%d-%H%M%S%Z)
+log_name="thoth-backup-$timestamp"
+log_file="$SCRIPT_DIR/logs/$log_name.log"
+
+#
+# Stage 1 - Who is doing the backup?
 #
 username="$($WHOAMI)"
-backup_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
 
 #
 # Stage 2 - Formulate the backup directory
@@ -36,7 +52,7 @@ user_dir="/Users/$username"
 hostname=$($HOSTNAME)
 hostname=$(echo $hostname | tr '[:upper:]' '[:lower:]')
 backup_user="$username-$hostname-macos"
-backup_key="$backup_dir/key/$backup_user"
+backup_key="$SCRIPT_DIR/key/$backup_user"
 
 if [ ! -f $backup_key ]; then
     printf "\n\nFATAL ERROR:\n\n"
@@ -46,7 +62,33 @@ if [ ! -f $backup_key ]; then
     printf "the operator correctly named. If the file is there, contact the\n"
     printf "operator because your key is not correct and you will need to be\n"
     printf "registered again on the server.\n\n"
+    exit 1
 fi
 
-echo $backup_user
-echo $backup_key
+#
+# Ensure Private Key has the correct Permissions
+#
+if [ $(stat -f %A $backup_key) != 600 ]; then
+  printf "\n\nINFO:\n\n"
+  printf "Your backup key does not have the correct permissions to be used\n"
+  printf "with ssh. The permissions will be updated to ensure success.\n\n"
+  $CHMOD 600 $backup_key
+fi
+
+#
+# Stage 4 - Run the Backup
+#
+ssh="$SSH -i $backup_key"
+source="$user_dir"
+dest="$backup_user@$BACKUP_SERVER:/home/$backup_user/BACKUP"
+rsync_base="$RSYNC -av --ignore-errors --delete -e"
+
+backup_cmd="$rsync_base \"$ssh\" $source $dest"
+
+$backup_cmd > $log_file 2>&1
+
+echo "$ssh"
+echo "$source"
+echo "$dest"
+echo "$rsync_base"
+echo "$backup_cmd"

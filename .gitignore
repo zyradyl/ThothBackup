@@ -1,0 +1,9 @@
+# Ignore everything in the client key directories
+client/macos/key/*
+client/macos/exclusions/*
+
+# Except for the readmes.
+!client/macos/key/README
+
+# Except for the keeps.
+!client/macos/exclusions/.keep
