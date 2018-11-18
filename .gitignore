@@ -8,3 +8,4 @@ client/macos/logs/*
 
 # Except for the keeps.
 !client/macos/exclusions/.keep
+!client/macos/logs/.keep
