@@ -97,14 +97,8 @@ fi
 ssh="$SSH -i $backup_key"
 source="$user_dir"
 dest="$backup_user@$BACKUP_SERVER:/home/$backup_user/BACKUP"
-rsync_base="$RSYNC -av --exlude-from=$exclusions --ignore-errors --delete -e"
+rsync_base="$RSYNC -av --exclude-from=$exclusions --ignore-errors --delete -e"
 
-backup_cmd="$rsync_base \"$ssh\" $source $dest"
+backup_cmd="$rsync_base $ssh $source $dest"
 
 $backup_cmd > $log_file 2>&1
-
-echo "$ssh"
-echo "$source"
-echo "$dest"
-echo "$rsync_base"
-echo "$backup_cmd"
