@@ -1,6 +1,7 @@
-# Ignore everything in the client key directories
+# Ignore everything in the client info directories
 client/macos/key/*
 client/macos/exclusions/*
+client/macos/logs/*
 
 # Except for the readmes.
 !client/macos/key/README

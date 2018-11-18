@@ -61,7 +61,7 @@ if [ ! -f $backup_key ]; then
     printf "given to you by the server operator. It should have come from\n"
     printf "the operator correctly named. If the file is there, contact the\n"
     printf "operator because your key is not correct and you will need to be\n"
-    printf "registered again on the server.\n\n"
+    printf "registered again on the server.\n"
     exit 1
 fi
 
@@ -71,17 +71,33 @@ fi
 if [ $(stat -f %A $backup_key) != 600 ]; then
   printf "\n\nINFO:\n\n"
   printf "Your backup key does not have the correct permissions to be used\n"
-  printf "with ssh. The permissions will be updated to ensure success.\n\n"
+  printf "with ssh. The permissions will be updated to ensure success.\n"
   $CHMOD 600 $backup_key
 fi
 
 #
-# Stage 4 - Run the Backup
+# Stage 4 - Confirm Exclusions exist, otherwise create them
+#
+exclusions="$SCRIPT_DIR/exclusions/exclusions.txt"
+
+if [ ! -f $exclusions ]; then
+  printf "\n\nINFO:\n\n"
+  printf "You do not currently have an exclusions file. One will be created\n"
+  printf "for you. By default, the exclusions file contains the directory\n"
+  printf "that this client is based in. This means that your private key\n"
+  printf "would be excluded. To prevent loss of your private key, please\n"
+  printf "copy it to a second safe location.\n"
+  base_exclusion=${SCRIPT_DIR#"$user_dir"}
+  echo "${base_exclusion}" > $exclusions
+fi
+
+#
+# Stage 5 - Run the Backup
 #
 ssh="$SSH -i $backup_key"
 source="$user_dir"
 dest="$backup_user@$BACKUP_SERVER:/home/$backup_user/BACKUP"
-rsync_base="$RSYNC -av --ignore-errors --delete -e"
+rsync_base="$RSYNC -av --exlude-from=$exclusions --ignore-errors --delete -e"
 
 backup_cmd="$rsync_base \"$ssh\" $source $dest"
 
