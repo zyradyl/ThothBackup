@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-# File:     macos-backup.sh
+# File:     thoth-backup
 # Title:    macOS Backup Routine
 # Author:	  Zyradyl
 # License:	MIT
