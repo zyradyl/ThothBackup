@@ -3,13 +3,10 @@
 <plist version="1.0">
 	<dict>
 		<key>Label</key>
-		<string>io.zyradyl.thoth-backup</string>
-		<key>ProgramArguments</key>
-		<array>
-		    <string>/bin/bash</string>
-		    <string>REPLACED_BY_INSTALLATION</string>
-		</array>
+		<string>io.zyradyl.thoth-backup.service</string>
+		<key>Program</key>
+		<string>REPLACED_BY_INSTALLATION</string>
     <key>StartInterval</key>
-    <integer>INTERVAL_SPECIFICATION</integer>
+    <integer>3600</integer>
 	</dict>
 </plist>
