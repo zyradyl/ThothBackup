@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 #
 # File:     macos-backup.sh
@@ -17,6 +17,7 @@
 #
 CHMOD="$(which chmod)"
 DATE="$(which date)"
+GZIP="$(which gzip)"
 HOSTNAME="$(which hostname)"
 RSYNC="$(which rsync)"
 SSH="$(which ssh)"
@@ -25,6 +26,7 @@ WHOAMI="$(which whoami)"
 #
 # Global Variables
 #
+MODE="$1"
 BACKUP_SERVER="192.168.1.100"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
@@ -78,18 +80,18 @@ fi
 #
 # Stage 4 - Confirm Exclusions exist, otherwise create them
 #
-exclusions="$SCRIPT_DIR/exclusions/exclusions.txt"
-
-if [ ! -f $exclusions ]; then
-  printf "\n\nINFO:\n\n"
-  printf "You do not currently have an exclusions file. One will be created\n"
-  printf "for you. By default, the exclusions file contains the directory\n"
-  printf "that this client is based in. This means that your private key\n"
-  printf "would be excluded. To prevent loss of your private key, please\n"
-  printf "copy it to a second safe location.\n"
-  base_exclusion=${SCRIPT_DIR#"$user_dir"}
-  echo "${base_exclusion}" > $exclusions
-fi
+#exclusions="$SCRIPT_DIR/exclusions/exclusions.txt"
+#
+#if [ ! -f $exclusions ]; then
+#  printf "\n\nINFO:\n\n"
+#  printf "You do not currently have an exclusions file. One will be created\n"
+#  printf "for you. By default, the exclusions file contains the directory\n"
+#  printf "that this client is based in. This means that your private key\n"
+#  printf "would be excluded. To prevent loss of your private key, please\n"
+#  printf "copy it to a second safe location.\n"
+#  base_exclusion=${SCRIPT_DIR#"$user_dir"}
+#  echo "${base_exclusion}" > $exclusions
+#fi
 
 #
 # Stage 5 - Run the Backup
@@ -101,4 +103,11 @@ rsync_base="$RSYNC -av --exclude-from=$exclusions --ignore-errors --delete -e"
 
 backup_cmd="$rsync_base $ssh $source $dest"
 
-$backup_cmd > $log_file 2>&1
+if [ "$MODE" = "--daemon" ]; then
+  $backup_cmd > $log_file 2>&1
+  $GZIP $log_file
+else
+  $backup_cmd
+fi
+
+#

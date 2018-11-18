@@ -2,6 +2,9 @@
 client/macos/key/*
 client/macos/exclusions/*
 client/macos/logs/*
+client/macos/Thoth-Backup.app/Contents/Resources/key/*
+client/macos/Thoth-Backup.app/Contents/Resources/exclusions/*
+client/macos/Thoth-Backup.app/Contents/Resources/logs/*
 
 # Except for the readmes.
 !client/macos/key/README
@@ -9,3 +12,6 @@ client/macos/logs/*
 # Except for the keeps.
 !client/macos/exclusions/.keep
 !client/macos/logs/.keep
+!client/macos/Thoth-Backup.app/Contents/Resources/key/.keep
+!client/macos/Thoth-Backup.app/Contents/Resources/exclusions/.keep
+!client/macos/Thoth-Backup.app/Contents/Resources/logs/.keep
