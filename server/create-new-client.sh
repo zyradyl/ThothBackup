@@ -1,45 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
 # File:			create-new-client.sh
 # Title:		Create New Backup Client Bash Script
 # Author:		Zyradyl
-# License:	ISC
+# License:	MIT
 # Version:	0.1
 #
 # Description:	This script will initialize the required system parameters to
 #		create a new backup user. The following steps are required:
-#
-#	Stage 1:
-#		+ Obtain the Username the new client should be registered under
-#		+ Obtain the System Name of the new client
-#		+ Obtain the Operating System of the new Client
-#
-#	Stage 2:
-#		+ Create a new System User named <User>-<System>-<OS>
-#		+ Add the new system user to the backup group.
-#		+ Set the new user to use a restricted shell.
-#		+ Create a home directory for the new user under /home
-#
-#	Stage 3:
-#		+ Check if the User already has a BTRFS subvolume under live_dir
-#		+ If the user does not, create a new BTRFS subvolume for them.
-#		+ Check if the System already has a subvolume under the User.
-#		+ If the system does not, create a new BTRFS subvolume for it.
-#		+ Check if the OS has a subvolume under the System.
-#		+ If it does not, create it.
-#
-#	Stage 4:
-#		+ Link the new BTRFS Directory into the users home directory
-#		  following a similar layout.
-#
-#	Stage 5:
-#		+ Set up permissions so backup service can iterate correctly
-#
-#	Stage 6:
-#		+ Generate a new SSH key for the user and add it to their
-#		  authorized keys.
-#		+ Set up permissions correctly so SSH will function.
 #
 
 #
@@ -67,7 +36,11 @@ LIVE_DIR="/srv/LIVE"
 RESTRICTED_SHELL="/bin/false"
 
 #
-# Stage 1 - Obtain Required Information
+# Stage 1 - Obtain information
+#
+#		+ Obtain the Username the new client should be registered under
+#		+ Obtain the System Name of the new client
+#		+ Obtain the Operating System of the new Client
 #
 printf "\n\ncreate-new-client.sh\n\n"
 printf "This script will request information needed to create a new\n"
@@ -86,11 +59,24 @@ printf "Press CTRL-C to abort.\n\n"
 #
 # Stage 2 - Add User to the System
 #
+#		+ Create a new System User named <User>-<System>-<OS>
+#		+ Add the new system user to the backup group.
+#		+ Set the new user to use a restricted shell.
+#		+ Create a home directory for the new user under /home
+#
 new_client="$client_username-$client_system-$client_os"
 $SUDO $USERADD -N -m -d /home/$new_client -g $BACKUP_GROUP -G users -s $RESTRICTED_SHELL $new_client
 
 #
 # Stage 3 - Create Storage Directories
+#
+#		+ Check if the User already has a BTRFS subvolume under live_dir
+#		+ If the user does not, create a new BTRFS subvolume for them.
+#		+ Check if the System already has a subvolume under the User.
+#		+ If the system does not, create a new BTRFS subvolume for it.
+#		+ Check if the OS has a subvolume under the System.
+#		+ If it does not, create it.
+#
 # This could be made much smaller, but this layout will make it easier to
 # refactor into some type of loop at some point.
 #
