@@ -18,7 +18,7 @@
 CHMOD="$(which chmod)"
 DATE="$(which date)"
 GZIP="$(which gzip)"
-HOSTNAME="$(which hostname)"
+HOSTNAME_CMD="$(which hostname)"
 RSYNC="$(which rsync)"
 SSH="$(which ssh)"
 WHOAMI="$(which whoami)"
@@ -26,35 +26,57 @@ WHOAMI="$(which whoami)"
 #
 # Global Variables
 #
-MODE="$1"
 BACKUP_SERVER="192.168.1.100"
+LOCAL_USERNAME="$($WHOAMI)"
+USER_DIR="/Users/$LOCAL_USERNAME"
+ARCHIVE_DIR="$USER_DIR/ThothArchive"
+
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
-#
-# Compound Variables
-#
-timestamp=$($DATE +%Y%m%d-%H%M%S%Z)
-log_name="thoth-backup-$timestamp"
-log_file="$SCRIPT_DIR/logs/$log_name.log"
+EXCLUSIONS="$SCRIPT_DIR/exclusions/exclusions"
+FIRST_RUN="$SCRIPT_DIR/triggers/FirstRun"
+INITIAL_SYNC="$SCRIPT_DIR/triggers/InitialSync"
+
+HOSTNAME=$($HOSTNAME_CMD)
+HOSTNAME=$(echo $HOSTNAME | tr '[:upper:]' '[:lower:]')
+BACKUP_USER="$LOCAL_USERNAME-$HOSTNAME-macos"
+BACKUP_KEY="$SCRIPT_DIR/key/$BACKUP_USER"
+
+TIMESTAMP=$($DATE +%Y%m%d-%H%M%S%Z)
+LOG_FILE="$SCRIPT_DIR/logs/$BACKUP_USER-$TIMESTAMP"
 
 #
-# Stage 1 - Who is doing the backup?
+# Traps - Trap CTRL-C to handle a graceful interrupt
 #
-username="$($WHOAMI)"
-
-
-#
-# Stage 2 - Formulate the backup directory
-#
-user_dir="/Users/$username"
+trap ctrl_c INT
+function ctrl_c {
+  exit 1
+}
 
 #
-# Stage 3 - Define the backup username for rsync, check that private key exists
+# Global Functions
 #
-hostname=$($HOSTNAME)
-hostname=$(echo $hostname | tr '[:upper:]' '[:lower:]')
-backup_user="$username-$hostname-macos"
-backup_key="$SCRIPT_DIR/key/$backup_user"
+function sync_background {
+  ssh="$SSH -i $BACKUP_KEY"
+  source="$user_dir"
+  dest="$BACKUP_USER@$BACKUP_SERVER:/home/$BACKUP_USER/BACKUP"
+  rsync_base="$RSYNC -av --exclude-from=$exclusions --ignore-errors --delete -e"
+  backup_cmd="$rsync_base $ssh $source $dest"
+  $backup_cmd > $log_file 2>&1
+  $GZIP $log_file
+}
+function sync_foreground {
+  ssh="$SSH -i $BACKUP_KEY"
+  source="$user_dir"
+  dest="$backup_user@$BACKUP_SERVER:/home/$backup_user/BACKUP"
+  rsync_base="$RSYNC --progress -a --exclude-from=$exclusions --ignore-errors --delete -e"
+  backup_cmd="$rsync_base $ssh $source $dest"
+  $backup_cmd
+}
+
+#
+# Stage 1 - Check if the Package is Correctly Set up
+#
 
 if [ ! -f $backup_key ]; then
     printf "\n\nFATAL ERROR:\n\n"
@@ -67,9 +89,6 @@ if [ ! -f $backup_key ]; then
     exit 1
 fi
 
-#
-# Ensure Private Key has the correct Permissions
-#
 if [ $(stat -f %A $backup_key) != 600 ]; then
   printf "\n\nINFO:\n\n"
   printf "Your backup key does not have the correct permissions to be used\n"
@@ -78,36 +97,39 @@ if [ $(stat -f %A $backup_key) != 600 ]; then
 fi
 
 #
-# Stage 4 - Confirm Exclusions exist, otherwise create them
+# Stage 2 - Check if this is our first run.
 #
-#exclusions="$SCRIPT_DIR/exclusions/exclusions.txt"
+#   + We look for a file in the "trigger" directory called "FirstRun"
+#   + If it doesn't exist, we assume this is the first run of the program.
+#   + If this is the first run, create the Archive Directory and add it to
+#     the exclusion list. While the archive is not yet functional, it is
+#     better to plan ahead.
 #
-#if [ ! -f $exclusions ]; then
-#  printf "\n\nINFO:\n\n"
-#  printf "You do not currently have an exclusions file. One will be created\n"
-#  printf "for you. By default, the exclusions file contains the directory\n"
-#  printf "that this client is based in. This means that your private key\n"
-#  printf "would be excluded. To prevent loss of your private key, please\n"
-#  printf "copy it to a second safe location.\n"
-#  base_exclusion=${SCRIPT_DIR#"$user_dir"}
-#  echo "${base_exclusion}" > $exclusions
-#fi
-
-#
-# Stage 5 - Run the Backup
-#
-ssh="$SSH -i $backup_key"
-source="$user_dir"
-dest="$backup_user@$BACKUP_SERVER:/home/$backup_user/BACKUP"
-rsync_base="$RSYNC -av --exclude-from=$exclusions --ignore-errors --delete -e"
-
-backup_cmd="$rsync_base $ssh $source $dest"
-
-if [ "$MODE" = "--daemon" ]; then
-  $backup_cmd > $log_file 2>&1
-  $GZIP $log_file
+if [ ! -f $FIRST_RUN ]; then
+  printf "First Run Detected, Initializing...\n"
+  printf "Welcome to the Thoth Backup System!\n\n"
+  printf "Thank you for your interest in this backup software. It should be\n"
+  printf "noted now that this software is PROVIDED WITHOUT ANY WARRANTY. If\n"
+  printf "you can, you may want to consider another backup client backed by\n"
+  printf "a large company. This is just a small private project.\n\n"
+  printf "Before we can go any further, an InitialSync must be performed.\n"
+  printf "This will copy your current files to the server to speed up the\n"
+  printf "actual backups that will happen in the future. This can take a VERY\n"
+  printf "long time. A program will be used to prevent your system from\n"
+  printf "sleeping. You can cancel this process at any time, and it will\n"
+  printf "start from where it left off.\n\n"
+  read -p "Press enter to continue."
+  if [ ! -d "$ARCHIVE_DIR" ]; then
+    mkdir $ARCHIVE_DIR
+  fi
+  if [ ! -f $EXCLUSIONS ]; then
+    echo "$ARCHIVE_DIR" > $EXCLUSIONS
+  fi
+  touch $FIRST_RUN
+elif [ ! -f $INITIAL_SYNC ]; then
+  printf "\n\nThe initial syncronization and setup will now start.\n"
+  read -p "Press enter to continue."
+  sync_foreground
 else
-  $backup_cmd
+  sync_background
 fi
-
-#
