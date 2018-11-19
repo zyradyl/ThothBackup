@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 #
-# File:			create-new-client.sh
-# Title:		Create New Backup Client Bash Script
-# Author:		Zyradyl
-# License:	MIT
-# Version:	0.1
+# File:     create-new-client.sh
+# Title:    Create New Backup Client Bash Script
+# Author:   Zyradyl
+# License:  MIT
+# Version:  0.1
 #
 # Description:	This script will initialize the required system parameters to
 #		create a new backup user. The following steps are required:

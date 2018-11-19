@@ -33,7 +33,7 @@ USER_DIR="/Users/$LOCAL_USERNAME"
 ARCHIVE_DIR="$USER_DIR/ThothArchive"
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-SCRIPT="$SCRIPT_DIR/thoth-client.sh"
+SCRIPT="$SCRIPT_DIR/thoth-client"
 SERVICE="$SCRIPT_DIR/service/io.zyradyl.thoth-backup.service.plist"
 
 EXCLUSIONS="$SCRIPT_DIR/exclusions/exclusions"
@@ -64,8 +64,10 @@ function syncronize {
   source="$USER_DIR"
   dest="$BACKUP_USER@$BACKUP_SERVER:/home/$BACKUP_USER/BACKUP"
   rsync_base="$RSYNC -av --exclude-from=$EXCLUSIONS --ignore-errors --delete -e"
+  dirty_cmd="$ssh $BACKUP_USER@$BACKUP_SERVER touch /home/$BACKUP_USER/BACKUP/DIRTY"
   backup_cmd="$rsync_base $ssh $source $dest"
   $backup_cmd > $LOG_FILE 2>&1
+  $dirty_cmd
   $GZIP $LOG_FILE
 }
 
@@ -122,7 +124,7 @@ if [ ! -f $FIRST_RUN ]; then
     printf "\nINFO:\n"
     printf "Your exclusions file is not currently set up. One will now be\n"
     printf "established with the default values. Please do not ever remove\n"
-    printf "the archive directory from the exclusions list."
+    printf "the archive directory from the exclusions list.\n"
     read -p "Press Enter To Continue..."
     echo "$ARCHIVE_DIR" > $EXCLUSIONS
   fi
