@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-# File:     thoth-backup
+# File:     thoth-client
 # Title:    macOS Backup Routine
 # Author:	  Zyradyl
 # License:	MIT
@@ -33,8 +33,7 @@ USER_DIR="/Users/$LOCAL_USERNAME"
 ARCHIVE_DIR="$USER_DIR/ThothArchive"
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-CONTAINER_DIR="$( cd ../.. && pwd)"
-EXECUTABLE="$CONTAINER_DIR/Contents/MacOS/Thoth-Backup"
+SCRIPT="$SCRIPT_DIR/thoth-client.sh"
 SERVICE="$SCRIPT_DIR/service/io.zyradyl.thoth-backup.service.plist"
 
 EXCLUSIONS="$SCRIPT_DIR/exclusions/exclusions"
@@ -87,6 +86,7 @@ if [ ! -f $FIRST_RUN ]; then
   printf "long time. A program will be used to prevent your system from\n"
   printf "sleeping. You can cancel this process at any time, and it will\n"
   printf "start from where it left off.\n\n"
+  read -p "Press Enter To Continue..."
 
   if [ ! -f $BACKUP_KEY ]; then
       printf "\n\nFATAL ERROR:\n"
@@ -96,6 +96,7 @@ if [ ! -f $FIRST_RUN ]; then
       printf "the operator correctly named. If the file is there, contact the\n"
       printf "operator because your key is not correct and you will need to be\n"
       printf "registered again on the server.\n\n"
+      read -p "Press Enter To Continue..."
       exit 1
   fi
 
@@ -104,6 +105,7 @@ if [ ! -f $FIRST_RUN ]; then
     printf "Your backup key does not have the correct permissions to be used\n"
     printf "with ssh. The permissions will be updated to ensure success.\n"
     printf "\n\n"
+    read -p "Press Enter To Continue..."
     $CHMOD 600 $BACKUP_KEY
   fi
 
@@ -112,6 +114,7 @@ if [ ! -f $FIRST_RUN ]; then
     printf "You do not currently have a ThothArchive directory. One will now\n"
     printf "be created for you.\n"
     printf "\n\n"
+    read -p "Press Enter To Continue..."
     mkdir $ARCHIVE_DIR
   fi
 
@@ -120,24 +123,28 @@ if [ ! -f $FIRST_RUN ]; then
     printf "Your exclusions file is not currently set up. One will now be\n"
     printf "established with the default values. Please do not ever remove\n"
     printf "the archive directory from the exclusions list."
+    read -p "Press Enter To Continue..."
     echo "$ARCHIVE_DIR" > $EXCLUSIONS
   fi
 
   printf "\n\n\nWARNING:\n"
-  printf "You must now allow Thoth-Backup Full Disk Access. In a moment, a\n"
+  printf "You must now allow ThothClient Full Disk Access. In a moment, a\n"
   printf "System Preferences Pane will open. You must do the following:\n"
   printf "1. Find \"Full Disk Access\" in the left selection box and click it\n"
   printf "2. Click the lock at the bottom to authenticate to the system\n"
   printf "3. Enter your system password\n"
-  printf "4. Drag the Thoth-Backup program from applications into FDA\n"
-  printf "5. Make sure Thoth-Backup is checked\n"
+  printf "4. Drag the ThothClient program from this location to FDA\n"
+  printf "5. Make sure ThothClient is checked\n"
   printf "6. Click the lock to deauthenticate\n"
   printf "\nOnce this is complete, exit out of this instance of the program\n"
   printf "and re-open it to begin the initial syncronization.\n"
+  read -p "Press Enter To Continue..."
 
   touch $FIRST_RUN
   open /System/Library/PreferencePanes/Security.prefPane
-  open /Applications
+  #open /Applications
+
+  read -p "Press Enter To Exit..."
 
   exit 1
 
@@ -149,12 +156,13 @@ elif [ ! -f $INITIAL_SYNC ]; then
   printf "Now installing the backup service...\n"
 
   # TODO: Clean this up
-  $SED -i '' "s~REPLACED_BY_INSTALLATION~$EXECUTABLE~g" $SERVICE
+  $SED -i '' "s~REPLACED_BY_INSTALLATION~$SCRIPT~g" $SERVICE
   cp "$SERVICE" "$USER_DIR/Library/LaunchAgents/"
   launchctl load -w "$USER_DIR/Library/LaunchAgents/io.zyradyl.thoth-backup.service.plist"
 
   printf "Thank you for choosing Thoth Backup!\n"
   touch $INITIAL_SYNC
+  read -p "Press Enter To Exit..."
 else
   syncronize
 fi
