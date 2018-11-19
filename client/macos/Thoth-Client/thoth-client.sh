@@ -33,9 +33,9 @@ USER_DIR="/Users/$LOCAL_USERNAME"
 ARCHIVE_DIR="$USER_DIR/ThothArchive"
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-
+CONTAINER_DIR="$( cd ../.. && pwd)"
+EXECUTABLE="$CONTAINER_DIR/Contents/MacOS/Thoth-Backup"
 SERVICE="$SCRIPT_DIR/service/io.zyradyl.thoth-backup.service.plist"
-SCRIPT="$SCRIPT_DIR/script"
 
 EXCLUSIONS="$SCRIPT_DIR/exclusions/exclusions"
 FIRST_RUN="$SCRIPT_DIR/triggers/FirstRun"
@@ -137,7 +137,7 @@ if [ ! -f $FIRST_RUN ]; then
 
   touch $FIRST_RUN
   open /System/Library/PreferencePanes/Security.prefPane
-  open /applications
+  open /Applications
 
   exit 1
 
@@ -149,13 +149,12 @@ elif [ ! -f $INITIAL_SYNC ]; then
   printf "Now installing the backup service...\n"
 
   # TODO: Clean this up
-  $SED -i '' "s~REPLACED_BY_INSTALLATION~$SCRIPT~g" $SERVICE
+  $SED -i '' "s~REPLACED_BY_INSTALLATION~$EXECUTABLE~g" $SERVICE
   cp "$SERVICE" "$USER_DIR/Library/LaunchAgents/"
   launchctl load -w "$USER_DIR/Library/LaunchAgents/io.zyradyl.thoth-backup.service.plist"
 
   printf "Thank you for choosing Thoth Backup!\n"
   touch $INITIAL_SYNC
-
 else
   syncronize
 fi

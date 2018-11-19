@@ -6,6 +6,10 @@ client/macos/Thoth-Backup.app/Contents/Resources/key/*
 client/macos/Thoth-Backup.app/Contents/Resources/exclusions/*
 client/macos/Thoth-Backup.app/Contents/Resources/logs/*
 client/macos/Thoth-Backup.app/Contents/Resources/triggers/*
+client/macos/Thoth-Client/key/*
+client/macos/Thoth-Client/exclusions/*
+client/macos/Thoth-Client/logs/*
+client/macos/Thoth-Client/triggers/*
 
 # Ignore mac files
 .DS_Store
@@ -20,3 +24,7 @@ client/macos/Thoth-Backup.app/Contents/Resources/triggers/*
 !client/macos/Thoth-Backup.app/Contents/Resources/exclusions/.keep
 !client/macos/Thoth-Backup.app/Contents/Resources/logs/.keep
 !client/macos/Thoth-Backup.app/Contents/Resources/triggers/.keep
+!client/macos/Thoth-Client/key/.keep
+!client/macos/Thoth-Client/exclusions/.keep
+!client/macos/Thoth-Client/logs/.keep
+!client/macos/Thoth-Client/triggers/.keep
