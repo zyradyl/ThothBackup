@@ -1,0 +1,30 @@
+# Ignore everything in the client info directories
+client/macos/old/key/*
+client/macos/old/exclusions/*
+client/macos/old/logs/*
+client/macos/Thoth-Backup.app/Contents/Resources/key/*
+client/macos/Thoth-Backup.app/Contents/Resources/exclusions/*
+client/macos/Thoth-Backup.app/Contents/Resources/logs/*
+client/macos/Thoth-Backup.app/Contents/Resources/triggers/*
+client/macos/ThothClient/key/*
+client/macos/ThothClient/exclusions/*
+client/macos/ThothClient/logs/*
+client/macos/ThothClient/triggers/*
+
+# Ignore mac files
+.DS_Store
+
+# Except for the readmes.
+!client/macos/old/key/README
+
+# Except for the keeps.
+!client/macos/old/exclusions/.keep
+!client/macos/old/logs/.keep
+!client/macos/Thoth-Backup.app/Contents/Resources/key/.keep
+!client/macos/Thoth-Backup.app/Contents/Resources/exclusions/.keep
+!client/macos/Thoth-Backup.app/Contents/Resources/logs/.keep
+!client/macos/Thoth-Backup.app/Contents/Resources/triggers/.keep
+!client/macos/ThothClient/key/.keep
+!client/macos/ThothClient/exclusions/.keep
+!client/macos/ThothClient/logs/.keep
+!client/macos/ThothClient/triggers/.keep

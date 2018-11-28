@@ -1,0 +1,170 @@
+#!/bin/sh
+
+#
+# File:     thoth-client
+# Title:    macOS Backup Routine
+# Author:	  Zyradyl
+# License:	MIT
+# Version:	0.1
+#
+# Description:  This is the script for a client side backup on macOS. This
+#               script should remain as free from hardcoded variables as
+#               possible.
+#
+
+#
+# Locate needed commands
+#
+CHMOD="$(which chmod)"
+DATE="$(which date)"
+GZIP="$(which gzip)"
+HOSTNAME_CMD="$(which hostname)"
+RSYNC="$(which rsync)"
+SED="$(which sed)"
+SSH="$(which ssh)"
+WHOAMI="$(which whoami)"
+
+#
+# Global Variables
+#
+BACKUP_SERVER="192.168.1.100"
+LOCAL_USERNAME="$($WHOAMI)"
+USER_DIR="/Users/$LOCAL_USERNAME"
+ARCHIVE_DIR="$USER_DIR/ThothArchive"
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+SCRIPT="$SCRIPT_DIR/thoth-client"
+SERVICE="$SCRIPT_DIR/service/io.zyradyl.thoth-backup.service.plist"
+
+EXCLUSIONS="$SCRIPT_DIR/exclusions/exclusions"
+FIRST_RUN="$SCRIPT_DIR/triggers/FirstRun"
+INITIAL_SYNC="$SCRIPT_DIR/triggers/InitialSync"
+
+HOSTNAME=$($HOSTNAME_CMD)
+HOSTNAME=$(echo $HOSTNAME | tr '[:upper:]' '[:lower:]')
+BACKUP_USER="$LOCAL_USERNAME-$HOSTNAME-macos"
+BACKUP_KEY="$SCRIPT_DIR/key/$BACKUP_USER"
+
+TIMESTAMP=$($DATE +%Y%m%d-%H%M%S%Z)
+LOG_FILE="$SCRIPT_DIR/logs/$BACKUP_USER-$TIMESTAMP"
+
+#
+# Traps - Trap CTRL-C to handle a graceful interrupt
+#
+trap ctrl_c INT
+function ctrl_c {
+  exit 1
+}
+
+#
+# Global Functions
+#
+function syncronize {
+  ssh="$SSH -i $BACKUP_KEY"
+  source="$USER_DIR"
+  dest="$BACKUP_USER@$BACKUP_SERVER:/home/$BACKUP_USER/BACKUP"
+  rsync_base="$RSYNC -av --exclude-from=$EXCLUSIONS --ignore-errors --delete -e"
+  dirty_cmd="$ssh $BACKUP_USER@$BACKUP_SERVER touch /home/$BACKUP_USER/BACKUP/DIRTY"
+  backup_cmd="$rsync_base $ssh $source $dest"
+  $backup_cmd > $LOG_FILE 2>&1
+  $dirty_cmd
+  $GZIP $LOG_FILE
+}
+
+#
+# Execute
+#
+if [ ! -f $FIRST_RUN ]; then
+
+  printf "First Run Detected, Initializing...\n"
+  printf "Welcome to the Thoth Backup System!\n\n"
+  printf "Thank you for your interest in this backup software. It should be\n"
+  printf "noted now that this software is PROVIDED WITHOUT ANY WARRANTY. If\n"
+  printf "you can, you may want to consider another backup client backed by\n"
+  printf "a large company. This is just a small private project.\n\n"
+  printf "Before we can go any further, an InitialSync must be performed.\n"
+  printf "This will copy your current files to the server to speed up the\n"
+  printf "actual backups that will happen in the future. This can take a VERY\n"
+  printf "long time. A program will be used to prevent your system from\n"
+  printf "sleeping. You can cancel this process at any time, and it will\n"
+  printf "start from where it left off.\n\n"
+  read -p "Press Enter To Continue..."
+
+  if [ ! -f $BACKUP_KEY ]; then
+      printf "\n\nFATAL ERROR:\n"
+      printf "Your backup key is either not present or incorrectly named.\n"
+      printf "Please make sure the key directory contains a private key file\n"
+      printf "given to you by the server operator. It should have come from\n"
+      printf "the operator correctly named. If the file is there, contact the\n"
+      printf "operator because your key is not correct and you will need to be\n"
+      printf "registered again on the server.\n\n"
+      read -p "Press Enter To Continue..."
+      exit 1
+  fi
+
+  if [ $(stat -f %A $BACKUP_KEY) != 600 ]; then
+    printf "\nINFO:\n"
+    printf "Your backup key does not have the correct permissions to be used\n"
+    printf "with ssh. The permissions will be updated to ensure success.\n"
+    printf "\n\n"
+    read -p "Press Enter To Continue..."
+    $CHMOD 600 $BACKUP_KEY
+  fi
+
+  if [ ! -d "$ARCHIVE_DIR" ]; then
+    printf "\nINFO:\n"
+    printf "You do not currently have a ThothArchive directory. One will now\n"
+    printf "be created for you.\n"
+    printf "\n\n"
+    read -p "Press Enter To Continue..."
+    mkdir $ARCHIVE_DIR
+  fi
+
+  if [ ! -f $EXCLUSIONS ]; then
+    printf "\nINFO:\n"
+    printf "Your exclusions file is not currently set up. One will now be\n"
+    printf "established with the default values. Please do not ever remove\n"
+    printf "the archive directory from the exclusions list.\n"
+    read -p "Press Enter To Continue..."
+    echo "$ARCHIVE_DIR" > $EXCLUSIONS
+  fi
+
+  printf "\n\n\nWARNING:\n"
+  printf "You must now allow ThothClient Full Disk Access. In a moment, a\n"
+  printf "System Preferences Pane will open. You must do the following:\n"
+  printf "1. Find \"Full Disk Access\" in the left selection box and click it\n"
+  printf "2. Click the lock at the bottom to authenticate to the system\n"
+  printf "3. Enter your system password\n"
+  printf "4. Drag the ThothClient program from this location to FDA\n"
+  printf "5. Make sure ThothClient is checked\n"
+  printf "6. Click the lock to deauthenticate\n"
+  printf "\nOnce this is complete, exit out of this instance of the program\n"
+  printf "and re-open it to begin the initial syncronization.\n"
+  read -p "Press Enter To Continue..."
+
+  touch $FIRST_RUN
+  open /System/Library/PreferencePanes/Security.prefPane
+  #open /Applications
+
+  read -p "Press Enter To Exit..."
+
+  exit 1
+
+elif [ ! -f $INITIAL_SYNC ]; then
+  printf "Welcome back!\n"
+  printf "\n\nThe initial syncronization will now continue.\n"
+  syncronize
+  printf "Initial Syncronization is now complete!\n"
+  printf "Now installing the backup service...\n"
+
+  # TODO: Clean this up
+  $SED -i '' "s~REPLACED_BY_INSTALLATION~$SCRIPT~g" $SERVICE
+  cp "$SERVICE" "$USER_DIR/Library/LaunchAgents/"
+  launchctl load -w "$USER_DIR/Library/LaunchAgents/io.zyradyl.thoth-backup.service.plist"
+
+  printf "Thank you for choosing Thoth Backup!\n"
+  touch $INITIAL_SYNC
+  read -p "Press Enter To Exit..."
+else
+  syncronize
+fi
