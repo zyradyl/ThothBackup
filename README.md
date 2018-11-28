@@ -8,3 +8,6 @@ into a single ruby client that will operate based on YAML files.
 The various system clients will also be rewritten. You are free to use this
 code as you please according to the conditions of the MIT license as indicated
 in the LICENSE file.
+## ThothClient ##
+This repository houses the python client for the Thoth Backup system.
+More information will be made available as time permits.
